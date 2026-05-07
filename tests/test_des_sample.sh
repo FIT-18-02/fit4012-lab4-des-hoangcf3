@@ -1,52 +1,28 @@
 #!/usr/bin/env bash
-# Test DES mẫu từ code gốc.
-# Compile chương trình, chạy, rồi đối chiếu ciphertext mong đợi.
-
 set -euo pipefail
 
-BIN="${BIN:-./des_test}"
-EXPECTED="85E813540F0AB405"
-KEY="133457799BBCDFF1"
-PLAINTEXT="0123456789ABCDEF"
+# DES official sample:
+# P  = 0x0123456789ABCDEF
+# K  = 0x133457799BBCDFF1
+# CT = 0x85E813540F0AB405
 
-echo "[DES sample test] compiling..."
+BIN="des_test"
+PLAINTEXT="0000000100100011010001010110011110001001101010111100110111101111"
+KEY="0001001100110100010101110111100110011011101111001101111111110001"
+EXPECTED="1000010111101000000100110101010000001111000010101011010000000101"
 
-if [[ -n "${BUILD_CMD:-}" ]]; then
-  eval "$BUILD_CMD"
-elif [[ -f Makefile || -f makefile ]]; then
-  make
-else
-  # Mặc định compile tất cả file C trong thư mục hiện tại.
-  gcc -Wall -Wextra -std=c11 -O2 ./*.c -o "$BIN"
-fi
+g++ -std=c++17 -Wall -Wextra -pedantic des.cpp -o "$BIN"
 
-if [[ ! -x "$BIN" ]]; then
-  echo "ERROR: Không tìm thấy executable: $BIN"
-  echo "Gợi ý: chạy với BIN=./ten_chuong_trinh hoặc BUILD_CMD='...'"
-  exit 1
-fi
-
-echo "[DES sample test] running..."
-
-OUTPUT="$("$BIN" "$KEY" "$PLAINTEXT")"
-
-# Chuẩn hóa output: chỉ giữ ký tự hex, chuyển sang uppercase,
-# rồi lấy 16 ký tự hex cuối cùng làm ciphertext.
-ACTUAL="$(echo "$OUTPUT" \
-  | tr '[:lower:]' '[:upper:]' \
-  | grep -oE '[0-9A-F]+' \
-  | tr -d '\n' \
-  | tail -c 16)"
-
-echo "Expected: $EXPECTED"
-echo "Actual:   $ACTUAL"
+OUTPUT=$(printf "1\n%s\n%s\n" "$PLAINTEXT" "$KEY" | ./"$BIN")
+ACTUAL=$(printf "%s\n" "$OUTPUT" | grep -Eo '[01]{64,}' | tail -n 1)
 
 if [[ "$ACTUAL" != "$EXPECTED" ]]; then
-  echo "FAIL: ciphertext không khớp"
-  echo "Raw output:"
-  echo "$OUTPUT"
+  echo "[FAIL] DES sample encrypt mismatch"
+  echo "Expected: $EXPECTED"
+  echo "Actual:   $ACTUAL"
+  rm -f "$BIN"
   exit 1
 fi
 
-echo "PASS: DES sample ciphertext đúng"
-exit 0
+echo "[PASS] DES sample encrypt matched expected ciphertext."
+rm -f "$BIN"
