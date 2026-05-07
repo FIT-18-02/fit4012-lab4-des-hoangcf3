@@ -2,6 +2,7 @@ mkdir -p logs
 
 {
   echo "Running DES/TripleDES Lab 4 tests"
+  echo "Date: $(date)"
   echo
 
   for t in tests/*.sh; do
