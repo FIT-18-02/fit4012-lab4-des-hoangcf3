@@ -1,7 +1,6 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/B72A5Yyp)
-# FIT4012 - Lab 4: DES / TripleDES Starter Repository
+# FIT4012 - Lab 4: DES / TripleDES
 
-Repo này là **starter repo** cho Lab 4 của FIT4012.  
+Repo này là bài thực hành Lab 4 về DES và TripleDES. Chương trình được viết bằng C++17, nhận dữ liệu nhị phân từ `stdin`, hỗ trợ DES encrypt/decrypt, TripleDES encrypt/decrypt, multi-block và zero padding.
 
 ## 1. Cấu trúc repo
 
@@ -14,7 +13,8 @@ Repo này là **starter repo** cho Lab 4 của FIT4012.
 │       └── ci.yml
 ├── logs/
 │   ├── .gitkeep
-│   └── README.md
+│   ├── README.md
+│   └── test-output.txt
 ├── scripts/
 │   └── run_sample.sh
 ├── tests/
@@ -31,7 +31,7 @@ Repo này là **starter repo** cho Lab 4 của FIT4012.
 └── report-1page.md
 ```
 
-## 2. Cách chạy chương trình (How to run)
+## 2. Cách chạy chương trình
 
 ### Cách 1: Dùng Makefile
 
@@ -57,37 +57,123 @@ cmake --build build
 
 ## 3. Input / Đầu vào
 
-TODO_STUDENT: Mô tả rõ đầu vào của chương trình sau khi em hoàn thiện bài lab.
+Chương trình nhận dữ liệu từ `stdin`. Dữ liệu đầu vào là chuỗi nhị phân chỉ gồm ký tự `0` và `1`.
 
-Gợi ý nên nêu:
-- plaintext đang được nhập như thế nào
-- key đang được nhập như thế nào
-- chương trình nhận 1 block hay nhiều block
-- định dạng dữ liệu là chuỗi bit, chuỗi ký tự hay file
+Mode đầu tiên xác định thao tác cần chạy:
+
+```text
+1 = DES encrypt
+2 = DES decrypt
+3 = TripleDES encrypt
+4 = TripleDES decrypt
+```
+
+### Mode 1: DES encrypt
+
+Nhập lần lượt:
+
+```text
+1
+plaintext nhị phân
+key 64-bit
+```
+
+Plaintext có thể dài hơn 64 bit. Nếu dài hơn 64 bit, chương trình chia plaintext thành nhiều block 64 bit. Nếu block cuối thiếu bit, chương trình thêm `0` vào cuối block cho đủ 64 bit.
+
+### Mode 2: DES decrypt
+
+Nhập lần lượt:
+
+```text
+2
+ciphertext nhị phân
+key 64-bit
+```
+
+Ciphertext được xử lý theo từng block 64 bit. Giải mã DES sử dụng cùng thuật toán Feistel nhưng round keys được dùng theo thứ tự đảo ngược.
+
+### Mode 3: TripleDES encrypt
+
+Nhập lần lượt:
+
+```text
+3
+plaintext 64-bit
+K1 64-bit
+K2 64-bit
+K3 64-bit
+```
+
+TripleDES encrypt được thực hiện theo chuỗi:
+
+```text
+C = E(K3, D(K2, E(K1, P)))
+```
+
+### Mode 4: TripleDES decrypt
+
+Nhập lần lượt:
+
+```text
+4
+ciphertext 64-bit
+K1 64-bit
+K2 64-bit
+K3 64-bit
+```
+
+TripleDES decrypt được thực hiện theo chuỗi ngược lại:
+
+```text
+P = D(K1, E(K2, D(K3, C)))
+```
 
 ## 4. Output / Đầu ra
 
-TODO_STUDENT: Mô tả rõ đầu ra của chương trình.
+Chương trình in kết quả cuối cùng ra `stdout` dưới dạng chuỗi nhị phân.
 
-Gợi ý nên nêu:
-- ciphertext hiển thị ra sao
-- có in round keys hay không
-- có hỗ trợ giải mã hay không
-- với TripleDES thì đầu ra gồm những gì
+- Với DES encrypt, output là ciphertext nhị phân.
+- Với DES decrypt, output là plaintext nhị phân sau khi giải mã.
+- Với TripleDES encrypt, output là ciphertext 64-bit.
+- Với TripleDES decrypt, output là plaintext 64-bit.
+- Chương trình không cần in round keys trong output cuối cùng.
+- Dòng output cuối cùng luôn chứa chuỗi nhị phân hợp lệ để test script hoặc CI có thể tách ra kiểm tra.
+
+Ví dụ chạy DES encrypt:
+
+```bash
+printf "1\n0000000100100011010001010110011110001001101010111100110111101111\n0001001100110100010101110111100110011011101111001101111111110001\n" | ./des
+```
+
+Output mong đợi:
+
+```text
+1000010111101000000100110101010000001111000010101011010000000101
+```
 
 ## 5. Padding đang dùng
 
-TODO_STUDENT: Giải thích cơ chế padding em dùng.
+Chương trình dùng zero padding cho DES multi-block.
 
-Gợi ý:
-- nếu plaintext dài hơn 64 bit thì chia block như thế nào
-- nếu thiếu bit thì pad bằng `0` ra sao
-- hạn chế của zero padding là gì
-- vì sao cách này chỉ phù hợp cho bài học nhập môn, không phải thiết kế an toàn hoàn chỉnh trong thực tế
+Quy trình:
+
+1. Nếu plaintext dài hơn 64 bit, chương trình chia plaintext thành các block 64 bit.
+2. Nếu block cuối chưa đủ 64 bit, chương trình thêm ký tự `0` vào cuối block.
+3. Mỗi block 64 bit được mã hóa độc lập bằng DES.
+4. Các ciphertext block được nối lại thành ciphertext cuối cùng.
+
+Ví dụ:
+
+```text
+plaintext = 1010
+sau zero padding = 1010000000000000000000000000000000000000000000000000000000000000
+```
+
+Hạn chế của zero padding là khi giải mã, chương trình không thể phân biệt chắc chắn các bit `0` cuối là dữ liệu thật hay padding được thêm vào. Vì vậy cách này chỉ phù hợp cho bài học nhập môn để minh họa xử lý block, không phải thiết kế an toàn hoàn chỉnh cho môi trường thực tế.
 
 ## 6. Tests bắt buộc
 
-Repo này đã tạo sẵn **5 tên file test mẫu** để sinh viên điền nội dung:
+Repo có 5 test chính:
 
 - `tests/test_des_sample.sh`
 - `tests/test_encrypt_decrypt_roundtrip.sh`
@@ -95,115 +181,102 @@ Repo này đã tạo sẵn **5 tên file test mẫu** để sinh viên điền n
 - `tests/test_tamper_negative.sh`
 - `tests/test_wrong_key_negative.sh`
 
-Sinh viên phải tự hoàn thiện test và bổ sung minh chứng chạy.
+Ý nghĩa từng test:
+
+| Test | Mục đích |
+|---|---|
+| `test_des_sample.sh` | Kiểm tra DES encrypt với vector mẫu chuẩn |
+| `test_encrypt_decrypt_roundtrip.sh` | Kiểm tra encrypt rồi decrypt trả về plaintext ban đầu |
+| `test_multiblock_padding.sh` | Kiểm tra plaintext dài hơn 64 bit, chia nhiều block và zero padding |
+| `test_tamper_negative.sh` | Kiểm tra ciphertext bị sửa bit thì không giải mã ra plaintext gốc |
+| `test_wrong_key_negative.sh` | Kiểm tra dùng sai key thì không giải mã ra plaintext gốc |
+
+Cách chạy test:
+
+```bash
+chmod +x tests/*.sh
+
+bash tests/test_des_sample.sh
+bash tests/test_encrypt_decrypt_roundtrip.sh
+bash tests/test_multiblock_padding.sh
+bash tests/test_tamper_negative.sh
+bash tests/test_wrong_key_negative.sh
+```
+
+Hoặc chạy toàn bộ:
+
+```bash
+for t in tests/*.sh; do
+  echo "== $t =="
+  bash "$t"
+done
+```
 
 ## 7. Logs / Minh chứng
 
-Thư mục `logs/` dùng để nộp minh chứng, ví dụ:
-- ảnh chụp màn hình khi chạy chương trình
-- output của test
-- log thử đúng / sai key / tamper
-- log cho mã hóa nhiều block
+Thư mục `logs/` dùng để lưu minh chứng chạy chương trình và test.
+
+Ví dụ tạo log:
+
+```bash
+mkdir -p logs
+
+{
+  echo "Running DES/TripleDES Lab 4 tests"
+  echo
+
+  for t in tests/*.sh; do
+    echo "== $t =="
+    bash "$t"
+    echo
+  done
+} > logs/test-output.txt
+```
+
+File `logs/test-output.txt` là minh chứng rằng chương trình đã được compile và các test đã chạy.
 
 ## 8. Ethics & Safe use
 
-- Chỉ chạy và kiểm thử trên dữ liệu học tập hoặc dữ liệu giả lập.
-- Không dùng repo này để tấn công hay can thiệp hệ thống thật.
-- Không trình bày đây là công cụ bảo mật sẵn sàng cho môi trường sản xuất.
-- Nếu tham khảo mã, tài liệu, công cụ hoặc AI, phải ghi nguồn rõ ràng.
-- Khi cộng tác nhóm, cần trung thực học thuật và mô tả đúng phần việc của mình.
-- Việc kiểm thử chỉ phục vụ học DES / TripleDES ở mức nhập môn.
+- Chương trình chỉ dùng cho mục đích học tập trong Lab 4.
+- Chỉ kiểm thử với dữ liệu giả lập hoặc dữ liệu học tập.
+- Không dùng chương trình để tấn công, can thiệp hoặc phân tích trái phép hệ thống thật.
+- Không trình bày chương trình này như một công cụ bảo mật sẵn sàng cho môi trường production.
+- DES là thuật toán cũ và không còn phù hợp cho bảo mật hiện đại.
+- Nếu có tham khảo mã nguồn, tài liệu hoặc AI, cần ghi rõ trong report.
 
 ## 9. Checklist nộp bài
 
-Trước khi nộp, cần có:
+Trước khi nộp, repo cần có:
+
 - `des.cpp`
 - `README.md` hoàn chỉnh
 - `report-1page.md` hoàn chỉnh
 - `tests/` với ít nhất 5 test
-- có negative test cho `tamper` và `wrong key`
+- negative test cho `tamper`
+- negative test cho `wrong key`
 - `logs/` có ít nhất 1 file minh chứng thật
-- không còn dòng `TODO_STUDENT`
+- không còn dòng placeholder chưa hoàn thiện
+- DES multi-block và zero padding chạy đúng
+- TripleDES encrypt/decrypt chạy đúng
+
+Có thể kiểm tra placeholder bằng:
+
+```bash
+grep -R "TODO_STUDENT" .
+```
+
+Nếu lệnh trên còn trả kết quả thì cần sửa hết trước khi nộp.
 
 ## 10. Lưu ý về CI
 
-CI sẽ **không chỉ kiểm tra file có tồn tại** mà còn kiểm tra:
-- các mục bắt buộc trong README
-- các mục bắt buộc trong report
-- sự hiện diện của negative tests
-- có minh chứng trong `logs/`
-- repo **không còn placeholder `TODO_STUDENT`**
+CI không chỉ kiểm tra file có tồn tại mà còn kiểm tra nội dung README, report, test, logs và chương trình thực sự chạy đúng.
 
-Vì vậy repo starter này sẽ **chưa pass CI** cho tới khi sinh viên hoàn thiện nội dung.
+Các phần quan trọng cần pass:
 
-
-## 11. Submission contract để auto-check Q2 và Q4
-
-Để GitHub Actions kiểm tra được **Q2** và **Q4**, repo này dùng **một contract nhập/xuất thống nhất**.
-Sinh viên cần sửa `des.cpp` để chương trình nhận dữ liệu từ **stdin** theo đúng thứ tự sau:
-
-```text
-Chọn mode:
-1 = DES encrypt
-2 = DES decrypt
-3 = TripleDES encrypt
-4 = TripleDES decrypt
-```
-
-### Mode 1: DES encrypt 
-Nhập lần lượt:
-1. `1`
-2. plaintext nhị phân
-3. key 64-bit
-
-Yêu cầu:
-- nếu plaintext dài hơn 64 bit: chia block 64 bit và mã hóa tuần tự
-- nếu block cuối thiếu bit: zero padding
-- in ra **ciphertext cuối cùng** dưới dạng chuỗi nhị phân
-
-### Mode 2: DES decrypt
-Nhập lần lượt:
-1. `2`
-2. ciphertext nhị phân
-3. key 64-bit
-
-Yêu cầu:
-- giải mã DES theo round keys đảo ngược
-- in ra plaintext cuối cùng
-
-### Mode 3: TripleDES encrypt 
-Nhập lần lượt:
-1. `3`
-2. plaintext 64-bit
-3. `K1`
-4. `K2`
-5. `K3`
-
-Yêu cầu:
-- thực hiện đúng chuỗi **E(K3, D(K2, E(K1, P)))**
-- in ra ciphertext cuối cùng
-
-### Mode 4: TripleDES decrypt 
-Nhập lần lượt:
-1. `4`
-2. ciphertext 64-bit
-3. `K1`
-4. `K2`
-5. `K3`
-
-Yêu cầu:
-- thực hiện giải mã TripleDES ngược lại
-- in ra plaintext cuối cùng
-
-### Lưu ý về output
-- Có thể in prompt tiếng Việt hoặc tiếng Anh.
-- Có thể in thêm round keys hay thông báo trung gian.
-- Nhưng **kết quả cuối cùng phải xuất hiện dưới dạng một chuỗi nhị phân dài hợp lệ** để CI tách và đối chiếu.
-
-## 14. CI hiện kiểm tra được gì
-
-Ngoài checklist nộp bài, CI hiện còn kiểm tra tự động:
-- chương trình thực sự nhận plaintext/key từ bàn phím và mã hóa multi-block với zero padding đúng.
-- chương trình thực sự mã hóa và giải mã TripleDES đúng theo vector kiểm thử.
-
-Nói cách khác, nếu sinh viên chỉ sửa README/tests cho đủ hình thức mà **không làm Q2 hoặc Q4**, CI sẽ vẫn fail.
+- chương trình nhận input từ `stdin`;
+- DES encrypt/decrypt hoạt động đúng;
+- DES multi-block có zero padding;
+- TripleDES encrypt/decrypt đúng thứ tự;
+- có đủ negative tests;
+- có log minh chứng;
+- không còn placeholder chưa hoàn thiện.
