@@ -1,0 +1,12 @@
+mkdir -p logs
+
+{
+  echo "Running DES/TripleDES Lab 4 tests"
+  echo
+
+  for t in tests/*.sh; do
+    echo "== $t =="
+    bash "$t"
+    echo
+  done
+} > logs/test-output.txt
