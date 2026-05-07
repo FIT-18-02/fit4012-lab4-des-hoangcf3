@@ -259,14 +259,6 @@ Trước khi nộp, repo cần có:
 - DES multi-block và zero padding chạy đúng
 - TripleDES encrypt/decrypt chạy đúng
 
-Có thể kiểm tra placeholder bằng:
-
-```bash
-grep -R "TODO_STUDENT" .
-```
-
-Nếu lệnh trên còn trả kết quả thì cần sửa hết trước khi nộp.
-
 ## 10. Lưu ý về CI
 
 CI không chỉ kiểm tra file có tồn tại mà còn kiểm tra nội dung README, report, test, logs và chương trình thực sự chạy đúng.
