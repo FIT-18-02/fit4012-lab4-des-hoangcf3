@@ -1,18 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-EXPECTED="Ciphertext: 0111111010111111010001001001001100100011111110101111101011111000"
+# Optional legacy sample test.
+# This version uses stdin mode 1, so it works with the required submission contract.
 
-g++ -std=c++17 -Wall -Wextra -pedantic des.cpp -o des_test
-OUTPUT=$(./des_test)
-LAST_LINE=$(printf "%s\n" "$OUTPUT" | tail -n 1)
+BIN="des_test"
+PLAINTEXT="0000000100100011010001010110011110001001101010111100110111101111"
+KEY="0001001100110100010101110111100110011011101111001101111111110001"
+EXPECTED="1000010111101000000100110101010000001111000010101011010000000101"
 
-if [[ "$LAST_LINE" != "$EXPECTED" ]]; then
-  echo "[FAIL] Unexpected ciphertext output"
+g++ -std=c++17 -Wall -Wextra -pedantic des.cpp -o "$BIN"
+
+OUTPUT=$(printf "1\n%s\n%s\n" "$PLAINTEXT" "$KEY" | ./"$BIN")
+ACTUAL=$(printf "%s\n" "$OUTPUT" | grep -Eo '[01]{64,}' | tail -n 1)
+
+if [[ "$ACTUAL" != "$EXPECTED" ]]; then
+  echo "[FAIL] Sample DES program produced unexpected ciphertext"
   echo "Expected: $EXPECTED"
-  echo "Actual:   $LAST_LINE"
+  echo "Actual:   $ACTUAL"
+  rm -f "$BIN"
   exit 1
 fi
 
 echo "[PASS] Sample DES program produced the expected ciphertext."
-rm -f des_test
+rm -f "$BIN"
